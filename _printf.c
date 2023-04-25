@@ -1,67 +1,82 @@
 #include "main.h"
-
-void print_buffer(char buffer[], int *buff_ind);
-
+#include <stdio.h>
 /**
- * _printf - Printf function
- * @format: format.
- * Return: Printed chars.
+ * _printf_helper - function that produces output according to a format
+ * @format: character string - composed of zero or more directives.
+ * @arg: character string - composed of zero or more directives.
+ * @i: character string - composed of zero or more directives.
+ * Return:  the number of characters printed without null
  */
-int _printf(const char *format, ...)
+int _printf_helper(const char *format, va_list arg, int *i)
 {
-	int i, printed = 0, printed_chars = 0;
-	int flags, width, precision, size, buff_ind = 0;
-	va_list list;
-	char buffer[BUFF_SIZE];
+	int res = 0, l, j;
+	char *tmp, *null = "(null)";
 
-	if (format == NULL)
-		return (-1);
-
-	va_start(list, format);
-
-	for (i = 0; format && format[i] != '\0'; i++)
+	switch (*(format + *i + 1))
 	{
-		if (format[i] != '%')
+	case 's':
+		tmp = va_arg(arg, char *);
+		if (tmp == NULL)
 		{
-			buffer[buff_ind++] = format[i];
-			if (buff_ind == BUFF_SIZE)
-				print_buffer(buffer, &buff_ind);
-			/* write(1, &format[i], 1);*/
-			printed_chars++;
+			for (l = 0; *(null + l) != '\0'; l++)
+			{
+				_putchar(*(null + l));
+				res++;
+			}
 		}
 		else
 		{
-			print_buffer(buffer, &buff_ind);
-			flags = get_flags(format, &i);
-			width = get_width(format, &i, list);
-			precision = get_precision(format, &i, list);
-			size = get_size(format, &i);
-			++i;
-			printed = handle_print(format, &i, list, buffer,
-				flags, width, precision, size);
-			if (printed == -1)
+			for (j = 0; tmp[j] != '\0'; j++)
+			{
+				_putchar(tmp[j]);
+				res++;
+			}
+		}
+		break;
+	case 'c':
+		_putchar(va_arg(arg, int));
+		res++;
+		break;
+	case '%':
+		_putchar(format[*i]);
+		res++;
+		break;
+	default:
+		_putchar(format[*i]);
+		res++;
+		*i -= 1;
+		break;
+	}
+	*i += 1;
+	return (res);
+}
+/**
+ * _printf - function that produces output according to a format
+ * @format: character string - composed of zero or more directives.
+ * Return:  the number of characters printed without null
+ */
+int _printf(const char *format, ...)
+{
+	int i = 0, count = 0;
+	va_list arg;
+
+	va_start(arg, format);
+	if (format == NULL)
+		return (-1);
+	for (i = 0; *(format + i) != '\0'; i++)
+	{
+		if (*(format + i) == '%')
+		{
+			if (format[i + 1] == '\0')
 				return (-1);
-			printed_chars += printed;
+			count += _printf_helper(format, arg, &i);
+		}
+		else
+		{
+			_putchar(*(format + i));
+			count++;
 		}
 	}
-
-	print_buffer(buffer, &buff_ind);
-
-	va_end(list);
-
-	return (printed_chars);
-}
-
-/**
- * print_buffer - Prints the contents of the buffer if it exist
- * @buffer: Array of chars
- * @buff_ind: Index at which to add next char, represents the length.
- */
-
-void print_buffer(char buffer[], int *buff_ind)
-{
-	if (*buff_ind > 0)
-		write(1, &buffer[0], *buff_ind);
-
-	*buff_ind = 0;
+	va_end(arg);
+	return (count);
 }
