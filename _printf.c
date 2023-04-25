@@ -1,82 +1,55 @@
 #include "main.h"
-#include <stdio.h>
-/**
- * _printf_helper - function that produces output according to a format
- * @format: character string - composed of zero or more directives.
- * @arg: character string - composed of zero or more directives.
- * @i: character string - composed of zero or more directives.
- * Return:  the number of characters printed without null
- */
-int _printf_helper(const char *format, va_list arg, int *i)
-{
-	int res = 0, l, j;
-	char *tmp, *null = "(null)";
 
-	switch (*(format + *i + 1))
-	{
-	case 's':
-		tmp = va_arg(arg, char *);
-		if (tmp == NULL)
-		{
-			for (l = 0; *(null + l) != '\0'; l++)
-			{
-				_putchar(*(null + l));
-				res++;
-			}
-		}
-		else
-		{
-			for (j = 0; tmp[j] != '\0'; j++)
-			{
-				_putchar(tmp[j]);
-				res++;
-			}
-		}
-		break;
-	case 'c':
-		_putchar(va_arg(arg, int));
-		res++;
-		break;
-	case '%':
-		_putchar(format[*i]);
-		res++;
-		break;
-	default:
-		_putchar(format[*i]);
-		res++;
-		*i -= 1;
-		break;
-	}
-	*i += 1;
-	return (res);
-}
 /**
- * _printf - function that produces output according to a format
- * @format: character string - composed of zero or more directives.
- * Return:  the number of characters printed without null
+ * _printf - prints a formatted string to stdout, similar to printf.
+ * @format: the format of the string to be printed.
+ *
+ * This function prints a formatted string to the stdout stream. It
+ * accepts a format string as its first argument and any additional arguments
+ * will be used to replace format specifiers in the format string. The function
+ *
+ * Return: the number of characters printed to the stdout stream.
  */
 int _printf(const char *format, ...)
 {
-	int i = 0, count = 0;
-	va_list arg;
+	va_list args, args_copy;
+	flags_t flags = {0};
+	int (*pfn)(va_list);
+	int i = 0, j, printed = 0, num, field_width;
 
-	va_start(arg, format);
-	if (format == NULL)
+	if (!format)
 		return (-1);
-	for (i = 0; *(format + i) != '\0'; i++)
+	va_start(args, format);
+	va_copy(args_copy, args);
+	for (; format && format[i]; i++)
 	{
-		if (*(format + i) == '%')
+		if (format[i] == '%')
 		{
+			/* handle field width */
+			if (_isdigit(format[i + 1]))
+			{
+				field_width = format[i + 1] - '0';
+				for (j = i + 2; _isdigit(format[j]); j++)
+					field_width = field_width * 10 + (format[j] - '0');
+				i = j - 1;
+			}
+			/* if the string ends with a %, returns -1 */
 			if (format[i + 1] == '\0')
 				return (-1);
-			count += _printf_helper(format, arg, &i);
+			/* skip spaces between the % and the format specifier ex: "%  s" */
+			for (; format[i + 1] == ' '; i++)
+				if (format[i + 2] == '\0')
+					return (-1);
+			num = va_arg(args_copy, long);
+			parse_flags(format, &flags, num, &printed, &i);
+			pfn = get_print(&format[++i]);
+			/* for invalid formats: print as is */
+			printed += pfn ? pfn(args) : _putchar('%') + _putchar(format[i]);
 		}
 		else
-		{
-			_putchar(*(format + i));
-			count++;
-		}
+			printed += _putchar(format[i]);
 	}
-	va_end(arg);
-	return (count);
+	va_end(args);
+	va_end(args_copy);
+	return (printed);
 }
